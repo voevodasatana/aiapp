@@ -44,6 +44,10 @@
       box-sizing: border-box;
     }
 
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+
     button {
       background-color: #007bff;
       color: #ffffff;
@@ -76,35 +80,68 @@
       min-height: 50px;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>Text Summarizer by Abdalkader</h1>
-    <form id="summarize-form">
+    <h1>AI Text Summarizer by Abdalkader</h1>
+    <form id="summarize-form" enctype="multipart/form-data">
       <textarea name="text" id="text" placeholder="Enter text here..."></textarea>
+      <br>
+      <label for="file">Or upload a file:</label>
+      <input type="file" id="file" name="file" accept=".txt,.pdf,.docx">
+      <br>
       <button type="submit">Summarize</button>
     </form>
     <h2>Summary:</h2>
     <div id="result"></div>
+    <button id="download-pdf" style="display: none; margin-top: 20px;">Download Summary as PDF</button>
   </div>
 
   <script>
     const form = document.getElementById('summarize-form');
+    const downloadButton = document.getElementById('download-pdf');
+    const resultDiv = document.getElementById('result');
+
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      const text = document.getElementById('text').value;
+      
+      const formData = new FormData(form);
       const response = await fetch('/summarize', {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({ text })
+        body: formData
       });
+
       const data = await response.json();
       if (data.summary) {
-        document.getElementById('result').innerText = data.summary;
+        resultDiv.textContent = data.summary;
+        downloadButton.style.display = 'block'; // Show the download button
       } else {
-        document.getElementById('result').innerText = "Error: " + data.error;
+        resultDiv.textContent = "Error: " + data.error;
+        downloadButton.style.display = 'none'; // Hide the download button
       }
     });
+
+downloadButton.addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Define the maximum width for the text
+  const text = resultDiv.textContent;
+  const margin = 10; // Margin on both sides
+  const pageWidth = doc.internal.pageSize.width - margin * 2;
+
+  // Split the text to fit the page width
+  const lines = doc.splitTextToSize(text, pageWidth);
+
+  // Add content to the PDF
+  doc.text("Summary:", margin, 10);
+  doc.text(lines, margin, 20);
+
+  // Save the PDF
+  doc.save("summary.pdf");
+});
+
   </script>
 </body>
 </html>
