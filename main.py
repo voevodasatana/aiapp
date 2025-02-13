@@ -2,7 +2,7 @@ import os
 import openai
 from flask import Flask, request, render_template, jsonify, send_file
 from werkzeug.utils import secure_filename
-from flask_cors import CORS
+#from flask_cors import CORS
 from pdf2docx import Converter
 from PyPDF2 import PdfReader
 from docx import Document
