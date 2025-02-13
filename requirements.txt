@@ -3,3 +3,8 @@ openai==0.28.0
 PyPDF2
 python-docx
 gunicorn
+pdf2docx
+werkzeug
+gunicorn
+magic
+
