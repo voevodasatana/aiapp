@@ -1,147 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Text Summarizer</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background-color: #f4f4f9;
-    }
-
-    .container {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      width: 80%;
-      max-width: 500px;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-      font-size: 1.8em;
-      color: #333333;
-    }
-
-    textarea {
-      width: 100%;
-      height: 150px;
-      padding: 10px;
-      margin-bottom: 20px;
-      font-size: 1em;
-      border: 1px solid #cccccc;
-      border-radius: 8px;
-      resize: none;
-      box-sizing: border-box;
-    }
-
-    input[type="file"] {
-      margin-bottom: 20px;
-    }
-
-    button {
-      background-color: #007bff;
-      color: #ffffff;
-      border: none;
-      padding: 10px 20px;
-      font-size: 1em;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    h2 {
-      margin-top: 20px;
-      font-size: 1.5em;
-      color: #444444;
-    }
-
-    #result {
-      margin-top: 10px;
-      padding: 10px;
-      background: #f9f9f9;
-      border: 1px solid #cccccc;
-      border-radius: 8px;
-      font-size: 1em;
-      text-align: left;
-      color: #333333;
-      min-height: 50px;
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Summarizer & PDF Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 40px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            margin: auto;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        textarea, input, button {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #download-link {
+            display: none;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>AI Text Summarizer by Abdalkader</h1>
-    <form id="summarize-form" enctype="multipart/form-data">
-      <textarea name="text" id="text" placeholder="Enter text here..."></textarea>
-      <br>
-      <label for="file">Or upload a file:</label>
-      <input type="file" id="file" name="file" accept=".txt,.pdf,.docx">
-      <br>
-      <button type="submit">Summarize</button>
-    </form>
-    <h2>Summary:</h2>
-    <div id="result"></div>
-    <button id="download-pdf" style="display: none; margin-top: 20px;">Download Summary as PDF</button>
-  </div>
 
-  <script>
-    const form = document.getElementById('summarize-form');
-    const downloadButton = document.getElementById('download-pdf');
-    const resultDiv = document.getElementById('result');
+    <h1>AI Summarizer & PDF to Word Converter</h1>
 
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const formData = new FormData(form);
-      const response = await fetch('/summarize', {
-        method: 'POST',
-        body: formData
-      });
+    <div class="container">
+        <h2>Summarize Text</h2>
+        <form id="summarize-form">
+            <textarea id="text" rows="5" placeholder="Enter text to summarize..."></textarea><br>
+            <button type="submit">Summarize</button>
+        </form>
 
-      const data = await response.json();
-      if (data.summary) {
-        resultDiv.textContent = data.summary;
-        downloadButton.style.display = 'block'; // Show the download button
-      } else {
-        resultDiv.textContent = "Error: " + data.error;
-        downloadButton.style.display = 'none'; // Hide the download button
-      }
-    });
+        <h2>OR Upload a File</h2>
+        <input type="file" id="file-upload" accept=".txt, .pdf, .docx"><br>
+        <button id="upload-btn">Summarize File</button>
 
-downloadButton.addEventListener('click', () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+        <h2>Summary:</h2>
+        <div id="summary-result" style="background:#eee; padding:10px; min-height:50px;"></div>
+        
+        <button id="download-summary-btn" style="display:none;">Download Summary as PDF</button>
+    </div>
 
-  // Define the maximum width for the text
-  const text = resultDiv.textContent;
-  const margin = 10; // Margin on both sides
-  const pageWidth = doc.internal.pageSize.width - margin * 2;
+    <div class="container">
+        <h2>Convert PDF to Word</h2>
+        <form id="pdf-to-word-form" enctype="multipart/form-data">
+            <input type="file" id="pdf-file" accept=".pdf"><br>
+            <button type="submit">Convert to Word</button>
+        </form>
 
-  // Split the text to fit the page width
-  const lines = doc.splitTextToSize(text, pageWidth);
+        <h2>Download Converted Word File:</h2>
+        <a id="word-download-link" style="display:none;" download="converted.docx">Download Word File</a>
+    </div>
 
-  // Add content to the PDF
-  doc.text("Summary:", margin, 10);
-  doc.text(lines, margin, 20);
+    <script>
+        const { jsPDF } = window.jspdf;
 
-  // Save the PDF
-  doc.save("summary.pdf");
-});
+        document.getElementById("summarize-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const text = document.getElementById("text").value;
+            if (!text) { alert("Please enter text to summarize."); return; }
 
-  </script>
+            const response = await fetch("/summarize", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ text })
+            });
+
+            const data = await response.json();
+            document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
+            document.getElementById("download-summary-btn").style.display = "block";
+        });
+
+        document.getElementById("upload-btn").addEventListener("click", async function() {
+            const fileInput = document.getElementById("file-upload").files[0];
+            if (!fileInput) { alert("Please upload a file."); return; }
+
+            const formData = new FormData();
+            formData.append("file", fileInput);
+
+            const response = await fetch("/summarize", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+            document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
+            document.getElementById("download-summary-btn").style.display = "block";
+        });
+
+        document.getElementById("download-summary-btn").addEventListener("click", function() {
+            const doc = new jsPDF();
+            const text = document.getElementById("summary-result").innerText;
+            const margin = 10;
+            const pageWidth = doc.internal.pageSize.width - margin * 2;
+            const lines = doc.splitTextToSize(text, pageWidth);
+            doc.text("Summary:", margin, 10);
+            doc.text(lines, margin, 20);
+            doc.save("summary.pdf");
+        });
+
+        document.getElementById("pdf-to-word-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById("pdf-file").files[0];
+            if (!fileInput) { alert("Please upload a PDF file."); return; }
+
+            const formData = new FormData();
+            formData.append("pdf-file", fileInput);
+
+            const response = await fetch("/convert_pdf_to_word", {
+                method: "POST",
+                body: formData
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const link = document.getElementById("word-download-link");
+                link.href = URL.createObjectURL(blob);
+                link.style.display = "block";
+                link.textContent = "Download Converted Word File";
+            } else {
+                alert("Error converting PDF to Word.");
+            }
+        });
+    </script>
+
 </body>
 </html>
