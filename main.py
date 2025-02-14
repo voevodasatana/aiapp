@@ -103,7 +103,7 @@ def convert_pdf_to_word():
 
         # Convert PDF to Word
         converter = Converter(pdf_path)
-        converter.convert(docx_path, start=0, end=None)
+        converter.convert(docx_path, start=0, end=10)
         converter.close()
 
         return send_file(docx_path, as_attachment=True, download_name="converted.docx")
