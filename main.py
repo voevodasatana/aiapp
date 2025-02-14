@@ -82,7 +82,7 @@ def convert_large_pdf(pdf_path, docx_path, chunk_size=10):
     converter = Converter(pdf_path)
 
     # Get total number of pages
-    total_pages = len(converter.doc.get_pages())
+    total_pages = converter.get_page_count()
     print(f"🔹 Total Pages: {total_pages}")
 
     for start in range(0, total_pages, chunk_size):
