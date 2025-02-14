@@ -126,11 +126,21 @@ def convert_pdf_to_word():
         # ✅ Use the chunk-based function to prevent memory overload
         convert_large_pdf(pdf_path, docx_path, chunk_size=10)
 
-        return send_file(docx_path, as_attachment=True, download_name="converted.docx")
+        return jsonify({"download_url": f"/download/{filename.replace('.pdf', '.docx')}"})
 
     except Exception as e:
         print(f"🔥 ERROR: {str(e)}")  # Print actual error
         return jsonify({"error": str(e)}), 500
+        
+@app.route("/download/<filename>")
+def download_file(filename):
+    """Allow users to download converted DOCX files."""
+    docx_path = os.path.join(CONVERTED_FOLDER, filename)
+    if os.path.exists(docx_path):
+        return send_file(docx_path, as_attachment=True, download_name=filename)
+    else:
+        return "File not found", 404
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
