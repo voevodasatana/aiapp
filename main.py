@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, render_template, jsonify, send_file
+from flask import Flask, request, render_template, jsonify, send_file, url_for
 from werkzeug.utils import secure_filename
 from pdf2docx import Converter
 from PyPDF2 import PdfReader
@@ -99,7 +99,7 @@ def convert_large_pdf(pdf_path, docx_path, chunk_size=10):
 
 @app.route("/convert_pdf_to_word", methods=["POST"])
 def convert_pdf_to_word():
-    """Convert uploaded PDF to Word while handling large files efficiently."""
+    """Convert uploaded PDF to Word and return download link."""
     try:
         if "pdf-file" not in request.files:
             return jsonify({"error": "No file uploaded"}), 400
@@ -110,38 +110,37 @@ def convert_pdf_to_word():
 
         filename = secure_filename(pdf_file.filename)
         pdf_path = os.path.join(UPLOAD_FOLDER, filename)
-        docx_path = os.path.join(CONVERTED_FOLDER, filename.replace(".pdf", ".docx"))
+        docx_filename = filename.replace(".pdf", ".docx")
+        docx_path = os.path.join(CONVERTED_FOLDER, docx_filename)
 
-        # Save PDF properly in binary mode
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_file.read())
+        pdf_file.save(pdf_path)
 
-        # **Debugging Step: Check if File Exists**
-        if not os.path.exists(pdf_path):
-            print(f"🚨 ERROR: File was not saved at {pdf_path}")
-            return jsonify({"error": "File saving failed"}), 500
+        # Convert PDF to Word
+        converter = Converter(pdf_path)
+        converter.convert(docx_path, start=0, end=None)
+        converter.close()
 
-        print(f"🚀 Converting: {pdf_path} -> {docx_path}")
+        # Ensure the file was created
+        if not os.path.exists(docx_path):
+            return jsonify({"error": "File conversion failed"}), 500
 
-        # ✅ Use the chunk-based function to prevent memory overload
-        convert_large_pdf(pdf_path, docx_path, chunk_size=10)
-
-        return jsonify({"download_url": f"/download/{filename.replace('.pdf', '.docx')}"})
+        # Generate a correct download URL
+        download_url = url_for("download_file", filename=docx_filename, _external=True)
+        return jsonify({"download_url": download_url})
 
     except Exception as e:
-        print(f"🔥 ERROR: {str(e)}")  # Print actual error
         return jsonify({"error": str(e)}), 500
-        
+
 @app.route("/download/<filename>")
 def download_file(filename):
-    """Allow users to download converted DOCX files."""
-    docx_path = os.path.join(CONVERTED_FOLDER, filename)
-    if os.path.exists(docx_path):
-        return send_file(docx_path, as_attachment=True, download_name=filename)
+    """Serve the converted Word file for download."""
+    file_path = os.path.join(CONVERTED_FOLDER, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
     else:
-        return "File not found", 404
-
+        return jsonify({"error": "File not found"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
+
 
