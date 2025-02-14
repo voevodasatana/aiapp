@@ -142,50 +142,50 @@
         });
 
         // Handle PDF to Word Conversion
-        document.getElementById("pdf-to-word-form").addEventListener("submit", async function(event) {
-            event.preventDefault();
-            const fileInput = document.getElementById("pdf-file").files[0];
-            const convertButton = document.getElementById("convert-btn");
-            const downloadLink = document.getElementById("word-download-link");
+    document.getElementById("pdf-to-word-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-            if (!fileInput) { 
-                alert("Please upload a PDF file."); 
-                return; 
-            }
+    const convertButton = document.querySelector("#pdf-to-word-form button");
+    convertButton.innerText = "Converting...";
+    convertButton.disabled = true;
 
-            // Change button text to "Converting..."
-            convertButton.innerText = "Converting...";
-            convertButton.disabled = true;
+    const fileInput = document.getElementById("pdf-file").files[0];
+    if (!fileInput) { 
+        alert("Please upload a PDF file."); 
+        convertButton.innerText = "Convert to Word";
+        convertButton.disabled = false;
+        return; 
+    }
 
-            const formData = new FormData();
-            formData.append("pdf-file", fileInput);
+    const formData = new FormData();
+    formData.append("pdf-file", fileInput);
 
-            try {
-                const response = await fetch("/convert_pdf_to_word", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.download_url) {
-                    convertButton.innerText = "Converted!";
-                    
-                    // Show download link
-                    downloadLink.href = data.download_url;
-                    downloadLink.style.display = "block";
-                    downloadLink.textContent = "Download Converted Word File";
-                } else {
-                    alert("Error converting PDF to Word: " + (data.error || "Unknown error"));
-                    convertButton.innerText = "Convert to Word";
-                }
-            } catch (error) {
-                alert("Failed to process request.");
-                convertButton.innerText = "Convert to Word";
-            }
-
-            convertButton.disabled = false;
+    try {
+        const response = await fetch("/convert_pdf_to_word", {
+            method: "POST",
+            body: formData
         });
+
+        const data = await response.json();
+
+        if (response.ok && data.download_url) {
+            convertButton.innerText = "Converted!";
+            const link = document.getElementById("word-download-link");
+            link.href = data.download_url;
+            link.style.display = "block";
+            link.textContent = "Download Converted Word File";
+        } else {
+            alert("Error converting PDF to Word: " + (data.error || "Unknown error"));
+            convertButton.innerText = "Convert to Word";
+        }
+    } catch (error) {
+        alert("Failed to process request.");
+        convertButton.innerText = "Convert to Word";
+    }
+
+    convertButton.disabled = false;
+});
+
 
     </script>
 
