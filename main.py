@@ -2,7 +2,6 @@ import os
 import openai
 from flask import Flask, request, render_template, jsonify, send_file
 from werkzeug.utils import secure_filename
-#from flask_cors import CORS
 from pdf2docx import Converter
 from PyPDF2 import PdfReader
 from docx import Document
@@ -14,8 +13,7 @@ UPLOAD_FOLDER = "uploads"
 CONVERTED_FOLDER = "converted"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONVERTED_FOLDER, exist_ok=True)
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
-
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB file size limit
 
 # OpenAI API Key (Set in Render/Environment Variables)
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -78,8 +76,28 @@ def summarize():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ✅ Function to Process Large PDFs in Chunks
+def convert_large_pdf(pdf_path, docx_path, chunk_size=10):
+    """Convert large PDFs to DOCX in smaller chunks to avoid memory issues."""
+    converter = Converter(pdf_path)
+
+    # Get total number of pages
+    total_pages = len(converter.doc.get_pages())
+    print(f"🔹 Total Pages: {total_pages}")
+
+    for start in range(0, total_pages, chunk_size):
+        end = min(start + chunk_size, total_pages)
+        print(f"🔄 Converting pages {start} to {end}")
+
+        # Convert only a small chunk of pages
+        converter.convert(docx_path, start=start, end=end, continuous=True)
+
+    converter.close()
+    print("✅ Full document converted successfully!")
+
 @app.route("/convert_pdf_to_word", methods=["POST"])
 def convert_pdf_to_word():
+    """Convert uploaded PDF to Word while handling large files efficiently."""
     try:
         if "pdf-file" not in request.files:
             return jsonify({"error": "No file uploaded"}), 400
@@ -92,19 +110,19 @@ def convert_pdf_to_word():
         pdf_path = os.path.join(UPLOAD_FOLDER, filename)
         docx_path = os.path.join(CONVERTED_FOLDER, filename.replace(".pdf", ".docx"))
 
-        pdf_file.save(pdf_path, buffer_size=8192)
+        # Save PDF properly in binary mode
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_file.read())
 
         # **Debugging Step: Check if File Exists**
         if not os.path.exists(pdf_path):
             print(f"🚨 ERROR: File was not saved at {pdf_path}")
             return jsonify({"error": "File saving failed"}), 500
 
-        print(f"Converting: {pdf_path} -> {docx_path}")
+        print(f"🚀 Converting: {pdf_path} -> {docx_path}")
 
-        # Convert PDF to Word
-        converter = Converter(pdf_path)
-        converter.convert(docx_path, start=0, end=10)
-        converter.close()
+        # ✅ Use the chunk-based function to prevent memory overload
+        convert_large_pdf(pdf_path, docx_path, chunk_size=10)
 
         return send_file(docx_path, as_attachment=True, download_name="converted.docx")
 
@@ -112,7 +130,6 @@ def convert_pdf_to_word():
         print(f"🔥 ERROR: {str(e)}")  # Print actual error
         return jsonify({"error": str(e)}), 500
 
-    return send_file(docx_path, as_attachment=True, download_name="converted.docx")
-
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
+
