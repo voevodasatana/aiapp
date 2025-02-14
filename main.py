@@ -79,11 +79,13 @@ def summarize():
 # ✅ Function to Process Large PDFs in Chunks
 def convert_large_pdf(pdf_path, docx_path, chunk_size=10):
     """Convert large PDFs to DOCX in smaller chunks to avoid memory issues."""
-    converter = Converter(pdf_path)
-
-    # Get total number of pages
-    total_pages = converter.get_page_count()
+    
+    # ✅ Use PyPDF2 to count the number of pages
+    reader = PdfReader(pdf_path)
+    total_pages = len(reader.pages)  # Correct way to count pages
     print(f"🔹 Total Pages: {total_pages}")
+
+    converter = Converter(pdf_path)
 
     for start in range(0, total_pages, chunk_size):
         end = min(start + chunk_size, total_pages)
