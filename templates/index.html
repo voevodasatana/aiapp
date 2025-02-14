@@ -33,19 +33,15 @@
             color: white;
             border: none;
             cursor: pointer;
-            transition: background 0.3s ease;
         }
         button:hover {
             background: #0056b3;
         }
-        .loading {
-            background: #ffc107 !important;
+        button:disabled {
+            background: #ccc;
             cursor: not-allowed;
         }
-        .success {
-            background: #28a745 !important;
-        }
-        #download-link, #word-download-link {
+        #download-link {
             display: none;
             margin-top: 10px;
             font-weight: bold;
@@ -87,16 +83,20 @@
     <script>
         const { jsPDF } = window.jspdf;
 
-        // Summarization Form
+        // Handle Text Summarization
         document.getElementById("summarize-form").addEventListener("submit", async function(event) {
             event.preventDefault();
-            const text = document.getElementById("text").value;
-            const button = document.getElementById("summarize-btn");
-            
-            if (!text) { alert("Please enter text to summarize."); return; }
+            const summarizeBtn = document.getElementById("summarize-btn");
+            summarizeBtn.innerText = "Summarizing...";
+            summarizeBtn.disabled = true;
 
-            button.innerText = "Summarizing...";
-            button.classList.add("loading");
+            const text = document.getElementById("text").value;
+            if (!text) { 
+                alert("Please enter text to summarize."); 
+                summarizeBtn.innerText = "Summarize";
+                summarizeBtn.disabled = false;
+                return; 
+            }
 
             const response = await fetch("/summarize", {
                 method: "POST",
@@ -107,18 +107,14 @@
             const data = await response.json();
             document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
             document.getElementById("download-summary-btn").style.display = "block";
-
-            button.innerText = "Summarize";
-            button.classList.remove("loading");
+            summarizeBtn.innerText = "Summarize";
+            summarizeBtn.disabled = false;
         });
 
-        // File Upload Summarization
+        // Handle File Upload for Summarization
         document.getElementById("upload-btn").addEventListener("click", async function() {
             const fileInput = document.getElementById("file-upload").files[0];
             if (!fileInput) { alert("Please upload a file."); return; }
-
-            this.innerText = "Uploading...";
-            this.classList.add("loading");
 
             const formData = new FormData();
             formData.append("file", fileInput);
@@ -131,12 +127,9 @@
             const data = await response.json();
             document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
             document.getElementById("download-summary-btn").style.display = "block";
-
-            this.innerText = "Summarize File";
-            this.classList.remove("loading");
         });
 
-        // Download Summary as PDF
+        // Handle Summary Download as PDF
         document.getElementById("download-summary-btn").addEventListener("click", function() {
             const doc = new jsPDF();
             const text = document.getElementById("summary-result").innerText;
@@ -148,39 +141,52 @@
             doc.save("summary.pdf");
         });
 
-        // Convert PDF to Word
+        // Handle PDF to Word Conversion
         document.getElementById("pdf-to-word-form").addEventListener("submit", async function(event) {
             event.preventDefault();
             const fileInput = document.getElementById("pdf-file").files[0];
-            const button = document.getElementById("convert-btn");
-            if (!fileInput) { alert("Please upload a PDF file."); return; }
+            const convertButton = document.getElementById("convert-btn");
+            const downloadLink = document.getElementById("word-download-link");
 
-            button.innerText = "Converting...";
-            button.classList.add("loading");
+            if (!fileInput) { 
+                alert("Please upload a PDF file."); 
+                return; 
+            }
+
+            // Change button text to "Converting..."
+            convertButton.innerText = "Converting...";
+            convertButton.disabled = true;
 
             const formData = new FormData();
             formData.append("pdf-file", fileInput);
 
-            const response = await fetch("/convert_pdf_to_word", {
-                method: "POST",
-                body: formData
-            });
+            try {
+                const response = await fetch("/convert_pdf_to_word", {
+                    method: "POST",
+                    body: formData
+                });
 
-            if (response.ok) {
-                const blob = await response.blob();
-                const link = document.getElementById("word-download-link");
-                link.href = URL.createObjectURL(blob);
-                link.style.display = "block";
-                link.textContent = "Download Converted Word File";
-                button.innerText = "Converted!";
-                button.classList.add("success");
-            } else {
-                alert("Error converting PDF to Word.");
-                button.innerText = "Convert to Word";
+                const data = await response.json();
+
+                if (response.ok && data.download_url) {
+                    convertButton.innerText = "Converted!";
+                    
+                    // Show download link
+                    downloadLink.href = data.download_url;
+                    downloadLink.style.display = "block";
+                    downloadLink.textContent = "Download Converted Word File";
+                } else {
+                    alert("Error converting PDF to Word: " + (data.error || "Unknown error"));
+                    convertButton.innerText = "Convert to Word";
+                }
+            } catch (error) {
+                alert("Failed to process request.");
+                convertButton.innerText = "Convert to Word";
             }
 
-            button.classList.remove("loading");
+            convertButton.disabled = false;
         });
+
     </script>
 
 </body>
