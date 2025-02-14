@@ -33,11 +33,19 @@
             color: white;
             border: none;
             cursor: pointer;
+            transition: background 0.3s ease;
         }
         button:hover {
             background: #0056b3;
         }
-        #download-link {
+        .loading {
+            background: #ffc107 !important;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #28a745 !important;
+        }
+        #download-link, #word-download-link {
             display: none;
             margin-top: 10px;
             font-weight: bold;
@@ -52,7 +60,7 @@
         <h2>Summarize Text</h2>
         <form id="summarize-form">
             <textarea id="text" rows="5" placeholder="Enter text to summarize..."></textarea><br>
-            <button type="submit">Summarize</button>
+            <button type="submit" id="summarize-btn">Summarize</button>
         </form>
 
         <h2>OR Upload a File</h2>
@@ -69,7 +77,7 @@
         <h2>Convert PDF to Word</h2>
         <form id="pdf-to-word-form" enctype="multipart/form-data">
             <input type="file" id="pdf-file" accept=".pdf"><br>
-            <button type="submit">Convert to Word</button>
+            <button type="submit" id="convert-btn">Convert to Word</button>
         </form>
 
         <h2>Download Converted Word File:</h2>
@@ -79,10 +87,16 @@
     <script>
         const { jsPDF } = window.jspdf;
 
+        // Summarization Form
         document.getElementById("summarize-form").addEventListener("submit", async function(event) {
             event.preventDefault();
             const text = document.getElementById("text").value;
+            const button = document.getElementById("summarize-btn");
+            
             if (!text) { alert("Please enter text to summarize."); return; }
+
+            button.innerText = "Summarizing...";
+            button.classList.add("loading");
 
             const response = await fetch("/summarize", {
                 method: "POST",
@@ -93,11 +107,18 @@
             const data = await response.json();
             document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
             document.getElementById("download-summary-btn").style.display = "block";
+
+            button.innerText = "Summarize";
+            button.classList.remove("loading");
         });
 
+        // File Upload Summarization
         document.getElementById("upload-btn").addEventListener("click", async function() {
             const fileInput = document.getElementById("file-upload").files[0];
             if (!fileInput) { alert("Please upload a file."); return; }
+
+            this.innerText = "Uploading...";
+            this.classList.add("loading");
 
             const formData = new FormData();
             formData.append("file", fileInput);
@@ -110,8 +131,12 @@
             const data = await response.json();
             document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
             document.getElementById("download-summary-btn").style.display = "block";
+
+            this.innerText = "Summarize File";
+            this.classList.remove("loading");
         });
 
+        // Download Summary as PDF
         document.getElementById("download-summary-btn").addEventListener("click", function() {
             const doc = new jsPDF();
             const text = document.getElementById("summary-result").innerText;
@@ -123,10 +148,15 @@
             doc.save("summary.pdf");
         });
 
+        // Convert PDF to Word
         document.getElementById("pdf-to-word-form").addEventListener("submit", async function(event) {
             event.preventDefault();
             const fileInput = document.getElementById("pdf-file").files[0];
+            const button = document.getElementById("convert-btn");
             if (!fileInput) { alert("Please upload a PDF file."); return; }
+
+            button.innerText = "Converting...";
+            button.classList.add("loading");
 
             const formData = new FormData();
             formData.append("pdf-file", fileInput);
@@ -142,9 +172,14 @@
                 link.href = URL.createObjectURL(blob);
                 link.style.display = "block";
                 link.textContent = "Download Converted Word File";
+                button.innerText = "Converted!";
+                button.classList.add("success");
             } else {
                 alert("Error converting PDF to Word.");
+                button.innerText = "Convert to Word";
             }
+
+            button.classList.remove("loading");
         });
     </script>
 
