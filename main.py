@@ -26,18 +26,23 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def extract_text_from_file(file_path):
-    """Extract text from uploaded file (PDF, DOCX, or TXT)."""
+    """Extract text from the first 10 pages of the uploaded file."""
+    extracted_text = ""
+
     if file_path.endswith(".txt"):
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
+    
     elif file_path.endswith(".pdf"):
         reader = PdfReader(file_path)
-        return "".join([page.extract_text() or "" for page in reader.pages])
+        for i in range(min(10, len(reader.pages))):  # Process only first 10 pages
+            extracted_text += reader.pages[i].extract_text() or ""
+
     elif file_path.endswith(".docx"):
         doc = Document(file_path)
-        return "\n".join([para.text for para in doc.paragraphs])
-    else:
-        return None
+        extracted_text = "\n".join([para.text for para in doc.paragraphs[:10]])  # Limit to first 10 paragraphs
+
+    return extracted_text
 
 @app.route("/")
 def index():
@@ -55,7 +60,7 @@ def summarize():
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(file_path)
 
-        # Extract text from file
+        # Extract text from file (only first 10 pages)
         text = extract_text_from_file(file_path)
         if not text:
             return jsonify({"error": "Unable to extract text from the file."}), 400
@@ -76,30 +81,9 @@ def summarize():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Function to Process Large PDFs in Chunks
-def convert_large_pdf(pdf_path, docx_path, chunk_size=10):
-    """Convert large PDFs to DOCX in smaller chunks to avoid memory issues."""
-    
-    # ✅ Use PyPDF2 to count the number of pages
-    reader = PdfReader(pdf_path)
-    total_pages = len(reader.pages)  # Correct way to count pages
-    print(f"🔹 Total Pages: {total_pages}")
-
-    converter = Converter(pdf_path)
-
-    for start in range(0, total_pages, chunk_size):
-        end = min(start + chunk_size, total_pages)
-        print(f"🔄 Converting pages {start} to {end}")
-
-        # Convert only a small chunk of pages
-        converter.convert(docx_path, start=start, end=end, continuous=True)
-
-    converter.close()
-    print("✅ Full document converted successfully!")
-
 @app.route("/convert_pdf_to_word", methods=["POST"])
 def convert_pdf_to_word():
-    """Convert uploaded PDF to Word and return download link."""
+    """Convert uploaded PDF to Word (only first 10 pages)."""
     try:
         if "pdf-file" not in request.files:
             return jsonify({"error": "No file uploaded"}), 400
@@ -115,16 +99,14 @@ def convert_pdf_to_word():
 
         pdf_file.save(pdf_path)
 
-        # Convert PDF to Word
+        # Convert first 10 pages of PDF to Word
         converter = Converter(pdf_path)
-        converter.convert(docx_path, start=0, end=None)
+        converter.convert(docx_path, start=0, end=10)  # Process only first 10 pages
         converter.close()
 
-        # Ensure the file was created
         if not os.path.exists(docx_path):
             return jsonify({"error": "File conversion failed"}), 500
 
-        # Generate a correct download URL
         download_url = url_for("download_file", filename=docx_filename, _external=True)
         return jsonify({"download_url": download_url})
 
@@ -142,5 +124,3 @@ def download_file(filename):
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
-
-
