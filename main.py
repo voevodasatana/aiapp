@@ -1,10 +1,12 @@
 import os
 import openai
+import requests
 from flask import Flask, request, render_template, jsonify, send_file, url_for
 from werkzeug.utils import secure_filename
 from pdf2docx import Converter
 from PyPDF2 import PdfReader
 from docx import Document
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -121,6 +123,57 @@ def download_file(filename):
         return send_file(file_path, as_attachment=True)
     else:
         return jsonify({"error": "File not found"}), 404
+@app.route("/")
+def index():
+    """Render the main webpage."""
+    return render_template("index.html")
+
+def extract_text_from_webpage(url):
+    """Fetch and extract readable text from a webpage."""
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Extracting main text from webpage
+        paragraphs = soup.find_all("p")
+        text = "\n".join([para.get_text() for para in paragraphs])
+
+        if len(text) > 10000:  # Limit content to avoid too long input
+            text = text[:10000]
+
+        return text.strip()
+    except Exception as e:
+        return None, str(e)
+
+@app.route("/summarize_webpage", methods=["POST"])
+def summarize_webpage():
+    """Summarize content from a webpage URL."""
+    data = request.get_json()
+    url = data.get("url", "")
+
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+
+    text, error = extract_text_from_webpage(url)
+    if not text:
+        return jsonify({"error": f"Failed to extract webpage content. {error}"}), 400
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful AI that summarizes text."},
+                {"role": "user", "content": f"Summarize this:\n\n{text}"}
+            ]
+        )
+        summary = response.choices[0].message.content.strip()
+        return jsonify({"summary": summary})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
