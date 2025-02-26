@@ -137,8 +137,8 @@ def extract_text_from_webpage(url):
         paragraphs = soup.find_all("p")
         text = "\n".join([para.get_text() for para in paragraphs])
 
-        if len(text) > 10000:  # Limit content to avoid too long input
-            text = text[:10000]
+        if len(text) > 1000000:  # Limit content to avoid too long input
+            text = text[:1000000]
 
         return text.strip()
     except Exception as e:
