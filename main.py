@@ -123,10 +123,6 @@ def download_file(filename):
         return send_file(file_path, as_attachment=True)
     else:
         return jsonify({"error": "File not found"}), 404
-@app.route("/")
-def index():
-    """Render the main webpage."""
-    return render_template("index.html")
 
 def extract_text_from_webpage(url):
     """Fetch and extract readable text from a webpage."""
