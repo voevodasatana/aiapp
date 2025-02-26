@@ -7,4 +7,6 @@ pdf2docx
 werkzeug
 gunicorn
 python-magic
+requests
+beautifulsoup4
 
