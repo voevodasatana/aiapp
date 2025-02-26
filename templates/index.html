@@ -50,7 +50,7 @@
 </head>
 <body>
 
-    <h1>AI Summarizer & PDF to Word Converter</h1>
+    <h1>AI Summarizer & PDF to Word Converter by Abdalkader</h1>
 
     <div class="container">
         <h2>Summarize Text</h2>
@@ -68,6 +68,35 @@
         
         <button id="download-summary-btn" style="display:none;">Download Summary as PDF</button>
     </div>
+    <h2>Summarize a Webpage</h2>
+<input type="text" id="webpage-url" placeholder="Enter webpage URL">
+<button id="summarize-url-btn">Summarize Webpage</button>
+
+<h2>Summary:</h2>
+<div id="summary-result" style="background:#eee; padding:10px; min-height:50px;"></div>
+
+<button id="download-summary-btn" style="display:none;">Download Summary as PDF</button>
+
+<script>
+    document.getElementById("summarize-url-btn").addEventListener("click", async function() {
+        const url = document.getElementById("webpage-url").value;
+        if (!url) {
+            alert("Please enter a valid webpage URL.");
+            return;
+        }
+
+        const response = await fetch("/summarize_webpage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url })
+        });
+
+        const data = await response.json();
+        document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
+        document.getElementById("download-summary-btn").style.display = "block";
+    });
+</script>
+
 
     <div class="container">
         <h2>Convert PDF to Word</h2>
