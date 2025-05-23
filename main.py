@@ -371,7 +371,7 @@ def summarize_webpage():
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful AI that summarizes webpage content accurately, focusing on the main points."},
+                {"role": "system", "content": "You are a helpful AI that summarizes webpage content accurately and professionally and doesn't make it too short, make the summarization format like bullet points for each main idea"},
                 {"role": "user", "content": f"Please summarize the key information from the following webpage content:\n\n{text}"}
             ],
             timeout=30 
