@@ -2,221 +2,226 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Summarizer & PDF Converter</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>AI Summarizer & Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 40px;
-            background-color: #f4f4f4;
-        }
-        h1, h2 {
-            color: #333;
+            background: #f8fafc;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
         }
         .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 50%;
-            margin: auto;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
         }
-        textarea, input, button {
-            width: 80%;
-            padding: 10px;
-            margin: 10px 0;
+        .card {
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
-        button {
-            background: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
+        .spinner-dots span {
+            font-size: 2rem;
+            opacity: 0.5;
+            animation: blink 1.4s infinite both;
         }
-        button:hover {
-            background: #0056b3;
+        .spinner-dots span:nth-child(2) { animation-delay: .2s; }
+        .spinner-dots span:nth-child(3) { animation-delay: .4s; }
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0.2; }
+            40% { opacity: 1; }
         }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .fade-in {
+            animation: fadeIn 0.7s;
         }
-        #download-link {
-            display: none;
-            margin-top: 10px;
-            font-weight: bold;
-        }
+        @keyframes fadeIn { from {opacity:0} to {opacity:1} }
     </style>
 </head>
 <body>
-
-    <h1>AI Summarizer & PDF to Word Converter by Abdalkader</h1>
-
     <div class="container">
-        <h2>Summarize Text</h2>
-        <form id="summarize-form">
-            <textarea id="text" rows="5" placeholder="Enter text to summarize..."></textarea><br>
-            <button type="submit" id="summarize-btn">Summarize</button>
-        </form>
+        <h1 class="text-center mb-5">AI Summarizer & PDF Converter</h1>
 
-        <h2>OR Upload a File</h2>
-        <input type="file" id="file-upload" accept=".txt, .pdf, .docx"><br>
-        <button id="upload-btn">Summarize File</button>
+        <div class="row g-4">
+            <!-- Summarization Card -->
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3>Summarize Text or File</h3>
+                    <form id="summarize-form">
+                        <div class="mb-3">
+                            <label for="text-input" class="form-label">Paste your text (or upload a file):</label>
+                            <textarea class="form-control" id="text-input" rows="5" maxlength="100000" placeholder="Enter text to summarize..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="file-input" class="form-label">Upload TXT, PDF, or DOCX (optional):</label>
+                            <input class="form-control" type="file" id="file-input" accept=".txt,.pdf,.docx">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Summarize</button>
+                    </form>
+                    <div id="summarize-loading" class="text-center mt-3" style="display:none;">
+                        <div class="spinner-dots"><span>.</span><span>.</span><span>.</span></div>
+                        <small>Summarizing, please wait...</small>
+                    </div>
+                    <div id="summarize-alert" class="alert mt-3 fade-in" style="display:none;"></div>
+                    <div id="summary-result" class="mt-3 fade-in" style="display:none;">
+                        <h5>Summary:</h5>
+                        <div class="bg-light p-3 rounded" id="summary-text"></div>
+                    </div>
+                </div>
+            </div>
 
-        <h2>Summary:</h2>
-        <div id="summary-result" style="background:#eee; padding:10px; height: 300px; overflow-y: auto; white-space: normal;"></div>
-        
-        <button id="download-summary-btn" style="display:none;">Download Summary as PDF</button>
+            <!-- Webpage Summarizer -->
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3>Summarize Webpage</h3>
+                    <form id="webpage-form">
+                        <div class="mb-3">
+                            <label for="web-url" class="form-label">Webpage URL:</label>
+                            <input class="form-control" type="url" id="web-url" placeholder="https://example.com">
+                        </div>
+                        <button type="submit" class="btn btn-secondary w-100">Summarize Webpage</button>
+                    </form>
+                    <div id="web-loading" class="text-center mt-3" style="display:none;">
+                        <div class="spinner-dots"><span>.</span><span>.</span><span>.</span></div>
+                        <small>Loading and summarizing webpage...</small>
+                    </div>
+                    <div id="web-alert" class="alert mt-3 fade-in" style="display:none;"></div>
+                    <div id="web-summary-result" class="mt-3 fade-in" style="display:none;">
+                        <h5>Webpage Summary:</h5>
+                        <div class="bg-light p-3 rounded" id="web-summary-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF to Word Converter -->
+            <div class="col-md-6">
+                <div class="card p-4 mt-4">
+                    <h3>Convert PDF to Word</h3>
+                    <form id="convert-form">
+                        <div class="mb-3">
+                            <input class="form-control" type="file" id="pdf-file" accept=".pdf">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Convert & Download DOCX</button>
+                    </form>
+                    <div id="convert-loading" class="text-center mt-3" style="display:none;">
+                        <div class="spinner-border text-success"></div>
+                        <small>Converting, please wait...</small>
+                    </div>
+                    <div id="convert-alert" class="alert mt-3 fade-in" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
     </div>
-    <h2>Summarize a Webpage</h2>
-<input type="text" id="webpage-url" placeholder="Enter webpage URL">
-<button id="summarize-url-btn">Summarize Webpage</button>
 
-<h2>Summary:</h2>
-<div id="summary-result" style="background:#eee; padding:10px; min-height:50px;"></div>
-
-<button id="download-summary-btn" style="display:none;">Download Summary as PDF</button>
-
-<script>
-    document.getElementById("summarize-url-btn").addEventListener("click", async function() {
-        const url = document.getElementById("webpage-url").value;
-        if (!url) {
-            alert("Please enter a valid webpage URL.");
-            return;
-        }
-
-        const response = await fetch("/summarize_webpage", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: url })
-        });
-
-        const data = await response.json();
-        document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
-        document.getElementById("download-summary-btn").style.display = "block";
-    });
-</script>
-
-
-    <div class="container">
-        <h2>Convert PDF to Word</h2>
-        <form id="pdf-to-word-form" enctype="multipart/form-data">
-            <input type="file" id="pdf-file" accept=".pdf"><br>
-            <button type="submit" id="convert-btn">Convert to Word</button>
-        </form>
-
-        <h2>Download Converted Word File:</h2>
-        <a id="word-download-link" style="display:none;" download="converted.docx">Download Word File</a>
-    </div>
-
+    <!-- Bootstrap JS + Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Main JS -->
     <script>
-        const { jsPDF } = window.jspdf;
+        // Summarization (text/file)
+        document.getElementById('summarize-form').onsubmit = async function(e){
+            e.preventDefault();
+            document.getElementById('summarize-alert').style.display = 'none';
+            document.getElementById('summary-result').style.display = 'none';
+            document.getElementById('summarize-loading').style.display = '';
 
-        // Handle Text Summarization
-        document.getElementById("summarize-form").addEventListener("submit", async function(event) {
-            event.preventDefault();
-            const summarizeBtn = document.getElementById("summarize-btn");
-            summarizeBtn.innerText = "Summarizing...";
-            summarizeBtn.disabled = true;
-
-            const text = document.getElementById("text").value;
-            if (!text) { 
-                alert("Please enter text to summarize."); 
-                summarizeBtn.innerText = "Summarize";
-                summarizeBtn.disabled = false;
-                return; 
+            const text = document.getElementById('text-input').value.trim();
+            const file = document.getElementById('file-input').files[0];
+            if (!text && !file) {
+                showAlert('summarize-alert', 'Please enter text or select a file.', 'warning');
+                document.getElementById('summarize-loading').style.display = 'none';
+                return;
             }
 
-            const response = await fetch("/summarize", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ text })
-            });
+            const formData = new FormData();
+            formData.append('text', text);
+            if (file) formData.append('file', file);
 
-            const data = await response.json();
-            document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
-            document.getElementById("download-summary-btn").style.display = "block";
-            summarizeBtn.innerText = "Summarize";
-            summarizeBtn.disabled = false;
-        });
+            try {
+                const resp = await fetch('/summarize', { method: 'POST', body: formData });
+                const data = await resp.json();
+                document.getElementById('summarize-loading').style.display = 'none';
+                if (data.summary) {
+                    document.getElementById('summary-text').textContent = data.summary;
+                    document.getElementById('summary-result').style.display = '';
+                } else {
+                    showAlert('summarize-alert', data.error || 'An error occurred.', 'danger');
+                }
+            } catch (err) {
+                showAlert('summarize-alert', 'Request failed. Please try again.', 'danger');
+                document.getElementById('summarize-loading').style.display = 'none';
+            }
+        };
 
-        // Handle File Upload for Summarization
-        document.getElementById("upload-btn").addEventListener("click", async function() {
-            const fileInput = document.getElementById("file-upload").files[0];
-            if (!fileInput) { alert("Please upload a file."); return; }
+        // Webpage Summarizer
+        document.getElementById('webpage-form').onsubmit = async function(e){
+            e.preventDefault();
+            document.getElementById('web-alert').style.display = 'none';
+            document.getElementById('web-summary-result').style.display = 'none';
+            document.getElementById('web-loading').style.display = '';
+
+            const url = document.getElementById('web-url').value.trim();
+            if (!url) {
+                showAlert('web-alert', 'Please enter a webpage URL.', 'warning');
+                document.getElementById('web-loading').style.display = 'none';
+                return;
+            }
+            try {
+                const resp = await fetch('/summarize_webpage', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ url })
+                });
+                const data = await resp.json();
+                document.getElementById('web-loading').style.display = 'none';
+                if (data.summary) {
+                    document.getElementById('web-summary-text').textContent = data.summary;
+                    document.getElementById('web-summary-result').style.display = '';
+                } else {
+                    showAlert('web-alert', data.error || 'An error occurred.', 'danger');
+                }
+            } catch (err) {
+                showAlert('web-alert', 'Request failed. Please try again.', 'danger');
+                document.getElementById('web-loading').style.display = 'none';
+            }
+        };
+
+        // PDF to Word Converter
+        document.getElementById('convert-form').onsubmit = async function(e){
+            e.preventDefault();
+            document.getElementById('convert-alert').style.display = 'none';
+            document.getElementById('convert-loading').style.display = '';
+
+            const file = document.getElementById('pdf-file').files[0];
+            if (!file) {
+                showAlert('convert-alert', 'Please select a PDF file.', 'warning');
+                document.getElementById('convert-loading').style.display = 'none';
+                return;
+            }
 
             const formData = new FormData();
-            formData.append("file", fileInput);
+            formData.append('pdf-file', file);
 
-            const response = await fetch("/summarize", {
-                method: "POST",
-                body: formData
-            });
+            try {
+                const resp = await fetch('/convert_pdf_to_word', { method: 'POST', body: formData });
+                const data = await resp.json();
+                document.getElementById('convert-loading').style.display = 'none';
+                if (data.download_url) {
+                    showAlert('convert-alert', 'Conversion successful! Download will start in a moment...', 'success');
+                    setTimeout(() => window.location = data.download_url, 1500);
+                } else {
+                    showAlert('convert-alert', data.error || 'An error occurred.', 'danger');
+                }
+            } catch (err) {
+                showAlert('convert-alert', 'Request failed. Please try again.', 'danger');
+                document.getElementById('convert-loading').style.display = 'none';
+            }
+        };
 
-            const data = await response.json();
-            document.getElementById("summary-result").innerText = data.summary || "Error: " + data.error;
-            document.getElementById("download-summary-btn").style.display = "block";
-        });
-
-        // Handle Summary Download as PDF
-        document.getElementById("download-summary-btn").addEventListener("click", function() {
-            const doc = new jsPDF();
-            const text = document.getElementById("summary-result").innerText;
-            const margin = 10;
-            const pageWidth = doc.internal.pageSize.width - margin * 2;
-            const lines = doc.splitTextToSize(text, pageWidth);
-            doc.text("Summary:", margin, 10);
-            doc.text(lines, margin, 20);
-            doc.save("summary.pdf");
-        });
-
-        // Handle PDF to Word Conversion
-    document.getElementById("pdf-to-word-form").addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    const convertButton = document.querySelector("#pdf-to-word-form button");
-    convertButton.innerText = "Converting...";
-    convertButton.disabled = true;
-
-    const fileInput = document.getElementById("pdf-file").files[0];
-    if (!fileInput) { 
-        alert("Please upload a PDF file."); 
-        convertButton.innerText = "Convert to Word";
-        convertButton.disabled = false;
-        return; 
-    }
-
-    const formData = new FormData();
-    formData.append("pdf-file", fileInput);
-
-    try {
-        const response = await fetch("/convert_pdf_to_word", {
-            method: "POST",
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.download_url) {
-            convertButton.innerText = "Converted!";
-            const link = document.getElementById("word-download-link");
-            link.href = data.download_url;
-            link.style.display = "block";
-            link.textContent = "Download Converted Word File";
-        } else {
-            alert("Error converting PDF to Word: " + (data.error || "Unknown error"));
-            convertButton.innerText = "Convert to Word";
+        // Utility for showing alerts
+        function showAlert(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `alert alert-${type} mt-3 fade-in`;
+            el.style.display = '';
         }
-    } catch (error) {
-        alert("Failed to process request.");
-        convertButton.innerText = "Convert to Word";
-    }
-
-    convertButton.disabled = false;
-});
-
-
     </script>
-
 </body>
 </html>
