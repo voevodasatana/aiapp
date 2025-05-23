@@ -20,7 +20,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONVERTED_FOLDER, exist_ok=True)
 
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB file size limit
-MAX_TEXT_INPUT_LENGTH = 50000  # Max chars for direct text/webpage summarization input to OpenAI
+MAX_TEXT_INPUT_LENGTH = 100000  # Max chars for direct text/webpage summarization input to OpenAI
 
 # OpenAI API Key (Set in Render/Environment Variables)
 openai.api_key = os.getenv("OPENAI_API_KEY")
